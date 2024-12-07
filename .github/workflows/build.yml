@@ -31,11 +31,11 @@ jobs:
       - name: Build EXE using PyInstaller
         run: |
           pip install pyinstaller
-          pyinstaller --onefile --noconsole WDC.py  # 替換為你的主程式名稱
+          pyinstaller --onefile --add-data "Nekoneko.ico:." WDC.py  # 替換為你的主程式名稱
 
       # Step 5: 上傳生成的 EXE 到 Release
       - name: Upload EXE to release
         uses: actions/upload-artifact@v3
         with:
-          name: WDC
+          name: WDC視窗關閉程式
           path: dist/WDC.exe

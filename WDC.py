@@ -1,5 +1,4 @@
 import os
-from pathlib import Path
 import ttkbootstrap as ttk  # 使用 ttkbootstrap 來創建窗口樣式
 from tkinter import messagebox  # 用來顯示訊息框
 
@@ -15,9 +14,15 @@ root = ttk.Window(themename="superhero")  # 使用 ttkbootstrap 主題
 # 設置視窗的背景色
 root.tk_setPalette(background="#172B4B")
 
-# 設置窗口標題和圖標
+# 設置窗口標題
 root.title("WDC.exe")
-root.iconbitmap(r"C:/Users/Lucien/Documents/GitHub/WDClose/Nekoneko.ico")  # 設置本地圖示
+
+# 設置本地圖示 (假設圖示檔案在專案根目錄)
+icon_path = "./Nekoneko.ico"
+if os.path.exists(icon_path):
+    root.iconbitmap(icon_path)  # 設置本地圖示
+else:
+    print("圖示檔案不存在，未設置圖示。")
 
 # 設置字體和顏色
 root.option_add("*Font", "微軟正黑體 14 bold")  # 全局字體設置為粗體
@@ -31,7 +36,6 @@ def generate_and_run_ahk():
     try:
         # 獲取用戶輸入
         num_windows = int(entry_num_windows.get())
-        auto_close = var_auto_close.get()
         window_titles = [entry_windows[i].get() for i in range(num_windows) if entry_windows[i].get().strip()]
 
         if not window_titles:
@@ -51,11 +55,7 @@ try {
         ahk_script += """} catch {
     ; 如果出現錯誤，這裡捕捉錯誤並忽略，無視顯示
 }
-
-; 腳本執行完畢，自動退出
 """
-        if auto_close:
-            ahk_script += "ExitApp()\n"
 
         # 保存 AHK 腳本
         ahk_file = Path("temp_close_windows.ahk")
