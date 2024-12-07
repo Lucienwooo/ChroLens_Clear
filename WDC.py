@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 import ttkbootstrap as ttk  # 使用 ttkbootstrap 來創建窗口樣式
 from tkinter import messagebox  # 用來顯示訊息框
 
@@ -14,15 +15,9 @@ root = ttk.Window(themename="superhero")  # 使用 ttkbootstrap 主題
 # 設置視窗的背景色
 root.tk_setPalette(background="#172B4B")
 
-# 設置窗口標題
+# 設置窗口標題和圖標
 root.title("WDC.exe")
-
-# 設置本地圖示 (假設圖示檔案在專案根目錄)
-icon_path = "./Nekoneko.ico"
-if os.path.exists(icon_path):
-    root.iconbitmap(icon_path)  # 設置本地圖示
-else:
-    print("圖示檔案不存在，未設置圖示。")
+root.iconbitmap(r"C:/Users/Lucien/Documents/GitHub/WDClose/Nekoneko.ico")  # 設置本地圖示
 
 # 設置字體和顏色
 root.option_add("*Font", "微軟正黑體 14 bold")  # 全局字體設置為粗體
