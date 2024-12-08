@@ -31,11 +31,19 @@ jobs:
       - name: Build EXE using PyInstaller
         run: |
           pip install pyinstaller
-          pyinstaller --onefile --add-data "Nekoneko.ico:." WDC.py  # 替換為你的主程式名稱
+          pyinstaller --onefile --noconsole --add-data "Nekoneko.ico;." WDC.py  # 替換為你的主程式名稱
 
-      # Step 5: 上傳生成的 EXE 到 Release
-      - name: Upload EXE to release
+      # Step 5: 壓縮文件
+      - name: Create ZIP archive
+        run: |
+          mkdir release
+          copy dist\WDC.exe release\WDC.exe
+          copy AutoHotkey_2.0.18_setup.exe release\AutoHotkey_2.0.18_setup.exe
+          powershell Compress-Archive -Path release\* -DestinationPath WDC_release.zip
+
+      # Step 6: 上傳 ZIP 文件到 Release
+      - name: Upload ZIP to release
         uses: actions/upload-artifact@v3
         with:
           name: WDC視窗關閉程式
-          path: dist/WDC.exe
+          path: WDC_release.zip
