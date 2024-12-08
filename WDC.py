@@ -20,7 +20,17 @@ root.tk_setPalette(background="#172B4B")
 
 # 設置窗口標題和圖標
 root.title("WDC.exe")
-root.iconbitmap(r".Nekoneko.ico")  # 設置本地圖示
+
+# 嘗試設置應用程式的圖示
+icon_path_a = "./Nekoneko.ico"  # 相對路徑
+icon_path_b = r"C:/Users/Lucien/Documents/GitHub/WDClose/Nekoneko.ico"  # 絕對路徑
+
+if os.path.exists(icon_path_a):
+    root.iconbitmap(icon_path_a)  # 設置相對路徑的圖示
+elif os.path.exists(icon_path_b):
+    root.iconbitmap(icon_path_b)  # 設置絕對路徑的圖示
+else:
+    print("圖示檔案不存在，將不設置圖示。")
 
 # 設置字體和顏色
 style = ttk.Style()
