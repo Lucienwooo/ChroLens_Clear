@@ -47,6 +47,7 @@ def save_config():
         "window_titles": [entry.get() for entry in entry_windows],
         "execution_key": execution_key_var.get(),
         "auto_run": auto_run_var.get(),  # 是否啟用開啟後自動執行
+        "auto_close": auto_close_var.get(),  # 是否啟用3秒後自動關閉
     }
     with open(CONFIG_FILE, "w", encoding="utf-8") as f:
         json.dump(config, f, ensure_ascii=False, indent=4)
@@ -63,6 +64,7 @@ def load_config():
     entry_num_windows.set(config.get("num_windows", "1"))
     execution_key_var.set(config.get("execution_key", "F8"))
     auto_run_var.set(config.get("auto_run", 0))
+    auto_close_var.set(config.get("auto_close", 0))  # 加載 "3秒後自動關閉" 設定
 
     window_titles = config.get("window_titles", [])
     for i, title in enumerate(window_titles):
@@ -76,6 +78,10 @@ def load_config():
     # 如果啟用了自動執行，則延遲1秒後執行動作
     if auto_run_var.get():
         root.after(1000, generate_and_run_ahk)  # 延遲1秒執行
+
+    # 如果啟用了3秒後自動關閉，則設置3秒後關閉程式
+    if auto_close_var.get():
+        root.after(3000, root.destroy)
 
 # AHK 腳本生成和執行邏輯
 def generate_and_run_ahk():
@@ -168,22 +174,25 @@ auto_run_checkbutton = ttk.Checkbutton(
 )
 auto_run_checkbutton.grid(row=13, column=0, columnspan=2, pady=5, sticky="w")
 
+# 3秒後自動關閉選項
+auto_close_var = ttk.IntVar(value=0)  # 默認為未勾選
+auto_close_checkbutton = ttk.Checkbutton(
+    root, text="3秒後自動關閉", variable=auto_close_var, command=save_config
+)
+auto_close_checkbutton.grid(row=14, column=0, columnspan=2, pady=5, sticky="w")
+
 # "存檔"按鈕
 save_button = ttk.Button(root, text="存檔", command=save_config, style="info.TButton")
-save_button.grid(row=14, column=0, padx=5, pady=5, sticky="e")
+save_button.grid(row=15, column=0, padx=5, pady=5, sticky="e")
 save_button.config(width=8)
 
 # 執行按鈕
 execute_button = ttk.Button(root, text="執行", command=generate_and_run_ahk, style="success.TButton")
-execute_button.grid(row=14, column=1, padx=5, pady=5, sticky="w")
+execute_button.grid(row=15, column=1, padx=5, pady=5, sticky="w")
 execute_button.config(width=8)
 
-# 啟動全局熱鍵監聽
-if keyboard:
-    keyboard.add_hotkey(execution_key, generate_and_run_ahk)
-
-# 程式啟動時加載設定
+# 加載配置
 load_config()
 
-# 啟動主循環
+# 運行主循環
 root.mainloop()
