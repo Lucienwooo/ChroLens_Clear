@@ -33,17 +33,14 @@ jobs:
           pip install pyinstaller
           pyinstaller --onefile --noconsole --add-data "Nekoneko.ico;." WDC.py  # 替換為你的主程式名稱
 
-      # Step 5: 壓縮文件
-      - name: Create ZIP archive
+      # Step 5: 壓縮文件並上傳 ZIP 文件到 Release
+      - name: Create and Upload ZIP archive
         run: |
           mkdir release
           copy dist\WDC.exe release\WDC.exe
           copy AutoHotkey_2.0.18_setup.exe release\AutoHotkey_2.0.18_setup.exe
           powershell Compress-Archive -Path release\* -DestinationPath WDC_release.zip
-
-      # Step 6: 上傳 ZIP 文件到 Release
-      - name: Upload ZIP to release
         uses: actions/upload-artifact@v3
         with:
-          name: WDC視窗關閉程式
+          name: WDC_v1.4
           path: WDC_release.zip
