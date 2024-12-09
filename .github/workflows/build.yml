@@ -39,8 +39,8 @@ jobs:
           mkdir release
           copy dist\WDC.exe release\WDC.exe
           copy AutoHotkey_2.0.18_setup.exe release\AutoHotkey_2.0.18_setup.exe
-          powershell Compress-Archive -Path release\* -DestinationPath WDC_release.zip
+          powershell Compress-Archive -Path release\* -DestinationPath release\WDC_release.zip
         uses: actions/upload-artifact@v3
         with:
           name: WDC_v1.4
-          path: WDC_release.zip
+          path: release\WDC_release.zip
