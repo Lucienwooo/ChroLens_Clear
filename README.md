@@ -10,5 +10,5 @@ WDC 可以將無法用taskkill或指定PID來關閉的視窗，進行關閉
 4.開啟後自動執行：預設未勾選<br>
 5. 3秒後自動關閉：預設未勾選<br>
 <br>
-![demo](./demo.gif)
+![image](https://github.com/rushionn/WDC/blob/main/demo.gif)
 <br>
