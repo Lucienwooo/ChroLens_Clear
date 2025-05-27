@@ -1,133 +1,163 @@
 import os
 import json
 from pathlib import Path
-import ttkbootstrap as ttk  # 使用 ttkbootstrap 來創建窗口樣式
+import ttkbootstrap as ttk
+import win32gui
+import win32con
+import time
 
 try:
-    import keyboard  # 嘗試導入 keyboard 庫
+    import keyboard
 except ImportError:
     keyboard = None
     print("Error: 'keyboard' 庫未安裝。請使用 'pip install keyboard' 進行安裝。")
 
-# 配置檔案名稱
 CONFIG_FILE = "config.json"
 
-# 創建 Tkinter 視窗，使用 ttkbootstrap 提供的樣式
-root = ttk.Window(themename="superhero")  # 使用 ttkbootstrap 主題
-
-# 設置視窗的背景色
+root = ttk.Window(themename="superhero")
 root.tk_setPalette(background="#172B4B")
+root.title("ChroLens_Clear v1.0")
 
-# 設置窗口標題和圖標
-root.title("ChroLens_Clear.exe")
-
-# 嘗試設置應用程式的圖示
-icon_path_a = "./Nekoneko.ico"  # 相對路徑
-icon_path_b = r"C:/Users/Lucien/Documents/GitHub/ChroLens_Clear/Nekoneko.ico"  # 絕對路徑
+icon_path_a = "./Nekoneko.ico"
+icon_path_b = r"C:/Users/Lucien/Documents/GitHub/ChroLens_Clear/Nekoneko.ico"
 
 if os.path.exists(icon_path_a):
-    root.iconbitmap(icon_path_a)  # 設置相對路徑的圖示
+    root.iconbitmap(icon_path_a)
 elif os.path.exists(icon_path_b):
-    root.iconbitmap(icon_path_b)  # 設置絕對路徑的圖示
+    root.iconbitmap(icon_path_b)
 else:
     print("圖示檔案不存在，將不設置圖示。")
 
-# 設置字體和顏色
 style = ttk.Style()
 style.configure("TLabel", foreground="#F5D07D", font=("微軟正黑體", 14, "bold"))
 style.configure("TButton", foreground="#F5D07D", font=("微軟正黑體", 14, "bold"))
 
-# 全局變數儲存執行按鍵設定
-execution_key = "F8"  # 預設執行按鍵
+execution_key = "F8"
 
-# 保存用戶設定
 def save_config():
     config = {
         "num_windows": entry_num_windows.get(),
         "window_titles": [entry.get() for entry in entry_windows],
         "execution_key": execution_key_var.get(),
-        "auto_run": auto_run_var.get(),  # 是否啟用開啟後自動執行
-        "auto_close": auto_close_var.get(),  # 是否啟用3秒後自動關閉
+        "auto_run": auto_run_var.get(),
+        "auto_close": auto_close_var.get(),
     }
     with open(CONFIG_FILE, "w", encoding="utf-8") as f:
         json.dump(config, f, ensure_ascii=False, indent=4)
 
-# 加載用戶設定
 def load_config():
     if not Path(CONFIG_FILE).exists():
         return
-
     with open(CONFIG_FILE, "r", encoding="utf-8") as f:
         config = json.load(f)
-
-    # 還原設定
     entry_num_windows.set(config.get("num_windows", "1"))
     execution_key_var.set(config.get("execution_key", "F8"))
     auto_run_var.set(config.get("auto_run", 0))
-    auto_close_var.set(config.get("auto_close", 0))  # 加載 "3秒後自動關閉" 設定
-
+    auto_close_var.set(config.get("auto_close", 0))
     window_titles = config.get("window_titles", [])
     for i, title in enumerate(window_titles):
         if i < len(entry_windows):
             entry_windows[i].delete(0, "end")
             entry_windows[i].insert(0, title)
-
-    # 更新視窗名稱輸入框的數量
     update_window_inputs()
-
-    # 如果啟用了自動執行，則延遲1秒後執行動作
     if auto_run_var.get():
-        root.after(1000, generate_and_run_ahk)  # 延遲1秒執行
-
-    # 如果啟用了3秒後自動關閉，則設置3秒後關閉程式
+        root.after(1000, generate_and_run_ahk)
     if auto_close_var.get():
         root.after(3000, root.destroy)
 
-# AHK 腳本生成和執行邏輯
+def close_window_by_title(title):
+    def enum_handler(hwnd, result):
+        if win32gui.IsWindowVisible(hwnd):
+            window_text = win32gui.GetWindowText(hwnd)
+            if window_text == title:
+                win32gui.PostMessage(hwnd, win32con.WM_CLOSE, 0, 0)
+                result.append(hwnd)
+    result = []
+    win32gui.EnumWindows(enum_handler, result)
+    return result
+
+def close_window_by_title_partial(keyword):
+    keyword_lower = keyword.lower()
+    def enum_handler(hwnd, result):
+        if win32gui.IsWindowVisible(hwnd):
+            window_text = win32gui.GetWindowText(hwnd)
+            if keyword_lower in window_text.lower():
+                win32gui.PostMessage(hwnd, win32con.WM_CLOSE, 0, 0)
+                result.append(hwnd)
+    result = []
+    win32gui.EnumWindows(enum_handler, result)
+    return result
+
 def generate_and_run_ahk():
     try:
-        # 獲取用戶輸入
+        delay = int(delay_var.get())
+        if delay < 0:
+            delay = 0
+        elif delay > 600:
+            delay = 600
+    except ValueError:
+        delay = 0
+
+    try:
+        repeat = int(repeat_var.get())
+        if repeat < 0:
+            repeat = 0
+    except ValueError:
+        repeat = 1
+
+    try:
         num_windows = int(entry_num_windows.get())
         window_titles = [entry_windows[i].get() for i in range(num_windows) if entry_windows[i].get().strip()]
-
         if not window_titles:
             return
+        try:
+            interval = int(interval_var.get())
+            if interval < 0:
+                interval = 0
+            elif interval > 99:
+                interval = 99
+        except ValueError:
+            interval = 0
 
-        # 動態生成 AHK 腳本
-        ahk_script = """#NoTrayIcon  ; 隱藏托盤圖示
+        def do_close():
+            count = 0
+            while True:
+                for title in window_titles:
+                    close_window_by_title_partial(title)
+                    if interval > 0:
+                        time.sleep(interval)
+                count += 1
+                if repeat == 0:
+                    continue
+                if count >= repeat:
+                    break
 
-; 嘗試執行窗口關閉操作，捕捉任何錯誤並忽略
-try {
-"""
-        for title in window_titles:
-            ahk_script += f'    WinClose("{title}")\n'
-            ahk_script += "    Sleep(200)  ; 等待 0.2 秒，執行下一輪關閉操作\n"
+        if delay > 0:
+            root.after(delay * 1000, do_close)
+        else:
+            do_close()
 
-        ahk_script += """} catch {
-    ; 如果出現錯誤，這裡捕捉錯誤並忽略，無視顯示
-}
-"""
-
-        # 保存 AHK 腳本
-        ahk_file = Path("temp_close_windows.ahk")
-        ahk_file.write_text(ahk_script, encoding="utf-8")
-
-        # 執行 AHK 腳本
-        os.system(f"start /B {ahk_file}")
+        try:
+            auto_close_sec = int(auto_close_var.get())
+            if auto_close_sec < 1:
+                auto_close_sec = 1
+            elif auto_close_sec > 99:
+                auto_close_sec = 99
+            root.after(auto_close_sec * 1000, root.destroy)
+        except Exception:
+            pass
 
     except ValueError:
         pass
 
-# 更新執行按鍵的熱鍵
 def update_execution_key(*args):
     global execution_key
     execution_key = execution_key_var.get()
     if keyboard:
-        keyboard.clear_all_hotkeys()  # 清除現有的熱鍵
+        keyboard.clear_all_hotkeys()
         keyboard.add_hotkey(execution_key, generate_and_run_ahk)
-    save_config()  # 保存配置
+    save_config()
 
-# 動態生成視窗名稱輸入框
 def update_window_inputs(*args):
     try:
         num = int(entry_num_windows.get())
@@ -139,11 +169,10 @@ def update_window_inputs(*args):
                 entry_windows[i].grid()
             else:
                 entry_windows[i].grid_remove()
-        save_config()  # 保存配置
+        save_config()
     except ValueError:
         pass
 
-# 創建 UI 元素
 ttk.Label(root, text="關閉視窗數").grid(row=0, column=0, padx=5, pady=5, sticky="w")
 entry_num_windows = ttk.Combobox(root, values=[str(i) for i in range(1, 11)], width=5, state="readonly")
 entry_num_windows.grid(row=0, column=1, padx=5, pady=5, sticky="w")
@@ -158,41 +187,100 @@ for i in range(10):
     entry_windows.append(entry)
     if i > 0:
         entry.grid_remove()
-entry_windows[0].insert(0, "MuMu操作錄製")  # 預設第一個輸入框內容
+entry_windows[0].insert(0, "chrome")
 
-# 設置執行按鍵
-ttk.Label(root, text="設定執行按鍵").grid(row=11, column=0, padx=5, pady=5, sticky="w")
+ttk.Label(root, text="執行快捷鍵").grid(row=11, column=0, padx=5, pady=5, sticky="w")
 execution_key_var = ttk.StringVar(value=execution_key)
 execution_key_combobox = ttk.Combobox(root, textvariable=execution_key_var, values=[f"F{i}" for i in range(1, 13)], width=5, state="readonly")
 execution_key_combobox.grid(row=11, column=1, padx=5, pady=5, sticky="w")
 execution_key_combobox.bind("<<ComboboxSelected>>", update_execution_key)
 
-# 自動執行選項
-auto_run_var = ttk.IntVar(value=0)  # 默認為未勾選
+ttk.Label(root, text="延遲執行").grid(row=12, column=0, padx=5, pady=5, sticky="w")
+delay_var = ttk.StringVar(value="0")
+delay_entry = ttk.Entry(root, textvariable=delay_var, width=4)
+delay_entry.grid(row=12, column=1, padx=5, pady=5, sticky="w")
+
+ttk.Label(root, text="關閉間隔").grid(row=13, column=0, padx=5, pady=5, sticky="w")
+interval_var = ttk.StringVar(value="0")
+interval_entry = ttk.Entry(root, textvariable=interval_var, width=4)
+interval_entry.grid(row=13, column=1, padx=5, pady=5, sticky="w")
+
+# 常駐模式選項區塊
+style.configure("Persistent.TLabel", foreground="#FFFFFF", font=("微軟正黑體", 12, "bold"))
+style.configure("PersistentGreen.TLabel", foreground="#198754", font=("微軟正黑體", 14, "bold"))
+style.configure("PersistentGreen.TCheckbutton", foreground="#198754", font=("微軟正黑體", 14, "bold"))
+
+persistent_frame = ttk.LabelFrame(root, borderwidth=2)
+persistent_frame.grid(row=15, column=0, columnspan=2, padx=5, pady=5, sticky="we")
+
+auto_run_var = ttk.IntVar(value=0)
 auto_run_checkbutton = ttk.Checkbutton(
-    root, text="開啟後自動執行", variable=auto_run_var, command=save_config
+    persistent_frame, text="程式啟動時自動執行", variable=auto_run_var, command=save_config, style="PersistentGreen.TCheckbutton"
 )
-auto_run_checkbutton.grid(row=13, column=0, columnspan=2, pady=5, sticky="w")
+auto_run_checkbutton.grid(row=0, column=0, columnspan=2, pady=5, sticky="w")
 
-# 3秒後自動關閉選項
-auto_close_var = ttk.IntVar(value=0)  # 默認為未勾選
-auto_close_checkbutton = ttk.Checkbutton(
-    root, text="3秒後自動關閉", variable=auto_close_var, command=save_config
-)
-auto_close_checkbutton.grid(row=14, column=0, columnspan=2, pady=5, sticky="w")
+# 自動退出此工具（輸入框在左，標籤在右，含懸浮提示）
+auto_close_var = ttk.StringVar(value="")  
+auto_close_entry = ttk.Entry(persistent_frame, textvariable=auto_close_var, width=4)
+auto_close_entry.grid(row=1, column=0, padx=5, pady=5, sticky="w")
+auto_close_label = ttk.Label(persistent_frame, text="自動退出此工具", style="PersistentGreen.TLabel")
+auto_close_label.grid(row=1, column=1, padx=5, pady=5, sticky="w")
+def show_auto_close_tip(event):
+    x = event.x_root + 10
+    y = event.y_root + 10
+    global tip_window_auto_close
+    tip_window_auto_close = ttk.Toplevel(root)
+    tip_window_auto_close.wm_overrideredirect(True)
+    tip_window_auto_close.geometry(f"+{x}+{y}")
+    label = ttk.Label(tip_window_auto_close, text="可輸入0~60秒\n沒數字=不自動退出\n0=馬上退出", background="#FFFACD", foreground="#000")
+    label.pack()
+def hide_auto_close_tip(event):
+    global tip_window_auto_close
+    if tip_window_auto_close:
+        tip_window_auto_close.destroy()
+        tip_window_auto_close = None
+tip_window_auto_close = None
+auto_close_label.bind("<Enter>", show_auto_close_tip)
+auto_close_label.bind("<Leave>", hide_auto_close_tip)
 
-# "存檔"按鈕
-save_button = ttk.Button(root, text="存檔", command=save_config, style="info.TButton")
-save_button.grid(row=15, column=0, padx=5, pady=5, sticky="e")
-save_button.config(width=8)
+# 重複執行次數（輸入框在左，標籤在右，含懸浮提示）
+repeat_var = ttk.StringVar(value="1")
+repeat_entry = ttk.Entry(persistent_frame, textvariable=repeat_var, width=4)
+repeat_entry.grid(row=2, column=0, padx=5, pady=5, sticky="w")
+repeat_label = ttk.Label(persistent_frame, text="重複執行次數", style="PersistentGreen.TLabel")
+repeat_label.grid(row=2, column=1, padx=5, pady=5, sticky="w")
+def show_tip(event):
+    x = event.x_root + 10
+    y = event.y_root + 10
+    global tip_window
+    tip_window = ttk.Toplevel(root)
+    tip_window.wm_overrideredirect(True)
+    tip_window.geometry(f"+{x}+{y}")
+    label = ttk.Label(tip_window, text="輸入 0 會無線重複", background="#FFFACD", foreground="#000")
+    label.pack()
+def hide_tip(event):
+    global tip_window
+    if tip_window:
+        tip_window.destroy()
+        tip_window = None
+tip_window = None
+repeat_label.bind("<Enter>", show_tip)
+repeat_label.bind("<Leave>", hide_tip)
 
-# 執行按鈕
-execute_button = ttk.Button(root, text="執行", command=generate_and_run_ahk, style="success.TButton")
-execute_button.grid(row=15, column=1, padx=5, pady=5, sticky="w")
-execute_button.config(width=8)
+# 直接接續儲存與執行按鈕
+def on_save():
+    save_config()
 
-# 加載配置
+def on_execute():
+    generate_and_run_ahk()
+
+button_frame = ttk.Frame(root)
+button_frame.grid(row=100, column=0, columnspan=2, pady=10)
+save_button = ttk.Button(button_frame, text="儲存", style="info.TButton", command=on_save, width=10)
+save_button.pack(side="left", padx=10)
+execute_button = ttk.Button(button_frame, text="執行", style="success.TButton", command=on_execute, width=10)
+execute_button.pack(side="left", padx=10)
+
 load_config()
-
-# 運行主循環
 root.mainloop()
+
