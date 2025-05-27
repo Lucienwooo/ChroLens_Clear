@@ -1,7 +1,7 @@
-### ChroLens_Clear 1.0.0 
+### ChroLens_Clear 1.0 
 ### 2025/05/26 By Lucienwooo
 ### pyinstaller --onefile --noconsole --add-data "Nekoneko.ico;." --icon=Nekoneko.ico --hidden-import=win32timezone ChroLens_Clear.py
-##### 檢查若名稱完全相同時是否會全部關閉，或是只關閉一個
+##### 尚無問題
 import os
 import json
 from pathlib import Path
@@ -9,7 +9,6 @@ import ttkbootstrap as ttk
 import win32gui
 import win32con
 import time
-import pygetwindow as gw
 
 try:
     import keyboard
@@ -65,7 +64,6 @@ def load_config():
             entry_windows[i].delete(0, "end")
             entry_windows[i].insert(0, title)
     update_window_inputs()
-    update_execution_key()  # 新增：載入時綁定快捷鍵
     if auto_run_var.get():
         root.after(1000, generate_and_run_ahk)
     if auto_close_var.get():
@@ -156,39 +154,12 @@ def generate_and_run_ahk():
     except ValueError:
         pass
 
-def bring_window_to_top_by_title_partial(keyword):
-    """只用檔名（不含副檔名）比對視窗標題"""
-    keyword = os.path.splitext(keyword)[0].lower()
-    found = False
-    for w in gw.getAllWindows():
-        if w.title and keyword in w.title.lower():
-            try:
-                w.activate()
-                w.restore()
-                w.alwaysOnTop = True
-                found = True
-            except Exception as e:
-                print(f"無法設為最上層: {w.title} {e}")
-    return found
-
-def bring_all_to_top():
-    try:
-        num_windows = int(entry_num_windows.get())
-        window_titles = [entry_windows[i].get() for i in range(num_windows) if entry_windows[i].get().strip()]
-        if not window_titles:
-            return
-        for title in window_titles:
-            bring_window_to_top_by_title_partial(title)
-    except Exception as e:
-        print(f"Bring to top error: {e}")
-
 def update_execution_key(*args):
     global execution_key
     execution_key = execution_key_var.get()
     if keyboard:
         keyboard.clear_all_hotkeys()
-        # 綁定 bring_all_to_top 到快捷鍵
-        keyboard.add_hotkey(execution_key, bring_all_to_top)
+        keyboard.add_hotkey(execution_key, generate_and_run_ahk)
     save_config()
 
 def update_window_inputs(*args):
