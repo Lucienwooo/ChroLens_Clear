@@ -1,4 +1,4 @@
-### ChroLens_Clear 1.0 
+### ChroLens_Clear 1.1 
 ### 2025/05/26 By Lucienwooo
 ### pyinstaller --onefile --noconsole --add-data "Nekoneko.ico;." --icon=Nekoneko.ico --hidden-import=win32timezone ChroLens_Clear.py
 ##### 尚無問題
@@ -20,7 +20,7 @@ CONFIG_FILE = "config.json"
 
 root = ttk.Window(themename="superhero")
 root.tk_setPalette(background="#172B4B")
-root.title("ChroLens_Clear v1.0")
+root.title("ChroLens_Clear v1.1")
 
 icon_path_a = "./Nekoneko.ico"
 icon_path_b = r"C:/Users/Lucien/Documents/GitHub/ChroLens_Clear/Nekoneko.ico"
@@ -81,6 +81,7 @@ def close_window_by_title(title):
     return result
 
 def close_window_by_title_partial(keyword):
+    import win32gui, win32con  # 延遲載入
     keyword_lower = keyword.lower()
     def enum_handler(hwnd, result):
         if win32gui.IsWindowVisible(hwnd):
