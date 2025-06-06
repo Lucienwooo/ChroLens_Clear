@@ -1,6 +1,6 @@
-### ChroLens_Clear 1.2 
+### ChroLens_Clear1.2 
 ### 2025/06/06 By Lucienwooo
-### pyinstaller --onefile --noconsole --add-data "Nekoneko.ico;." --icon=Nekoneko.ico --hidden-import=win32timezone ChroLens_Clear.py
+### pyinstaller --onedir --noconsole --add-data "Nekoneko.ico;." --icon=Nekoneko.ico --hidden-import=win32timezone ChroLens_Clear.py
 ##### 尚無問題
 import os
 import json
@@ -96,7 +96,7 @@ def early_auto_run():
 # 再初始化 UI
 root = ttk.Window(themename="superhero")
 root.tk_setPalette(background="#172B4B")
-root.title("ChroLens_Clear v1.2")
+root.title("ChroLens_Clear 1.2")
 
 icon_path_a = "./Nekoneko.ico"
 icon_path_b = r"C:/Users/Lucien/Documents/GitHub/ChroLens_Clear/Nekoneko.ico"
