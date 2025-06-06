@@ -1,5 +1,5 @@
-### ChroLens_Clear 1.1 
-### 2025/05/26 By Lucienwooo
+### ChroLens_Clear 1.2 
+### 2025/06/06 By Lucienwooo
 ### pyinstaller --onefile --noconsole --add-data "Nekoneko.ico;." --icon=Nekoneko.ico --hidden-import=win32timezone ChroLens_Clear.py
 ##### 尚無問題
 import os
@@ -10,17 +10,93 @@ import win32gui
 import win32con
 import time
 
-try:
-    import keyboard
-except ImportError:
-    keyboard = None
-    print("Error: 'keyboard' 庫未安裝。請使用 'pip install keyboard' 進行安裝。")
-
 CONFIG_FILE = "config.json"
 
+def close_window_by_title(title):
+    def enum_handler(hwnd, result):
+        if win32gui.IsWindowVisible(hwnd):
+            window_text = win32gui.GetWindowText(hwnd)
+            if window_text == title:
+                win32gui.PostMessage(hwnd, win32con.WM_CLOSE, 0, 0)
+                result.append(hwnd)
+    result = []
+    win32gui.EnumWindows(enum_handler, result)
+    return result
+
+def close_window_by_title_partial(keyword):
+    keyword_lower = keyword.lower()
+    def enum_handler(hwnd, result):
+        if win32gui.IsWindowVisible(hwnd):
+            window_text = win32gui.GetWindowText(hwnd)
+            if keyword_lower in window_text.lower():
+                win32gui.PostMessage(hwnd, win32con.WM_CLOSE, 0, 0)
+                result.append(hwnd)
+    result = []
+    win32gui.EnumWindows(enum_handler, result)
+    return result
+
+# 儲存與載入 config 的函式不變
+
+def early_auto_run():
+    """在 UI 初始化後排程自動關閉功能（不阻塞 UI）"""
+    if not Path(CONFIG_FILE).exists():
+        return
+    with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+        config = json.load(f)
+    if config.get("auto_run", 0):
+        window_titles = config.get("window_titles", [])
+        try:
+            repeat = int(config.get("repeat", 1))
+        except Exception:
+            repeat = 1
+        try:
+            interval = int(config.get("interval", 0))
+        except Exception:
+            interval = 0
+        try:
+            delay = int(config.get("delay", 0))
+        except Exception:
+            delay = 0
+        try:
+            auto_close_sec = int(config.get("auto_close", 0))
+        except Exception:
+            auto_close_sec = 0
+
+        def do_close():
+            count = 0
+            while True:
+                for title in window_titles:
+                    if title.strip():
+                        close_window_by_title_partial(title)
+                        if interval > 0:
+                            time.sleep(interval)
+                count += 1
+                if repeat == 0:
+                    continue
+                if count >= repeat:
+                    break
+            # 自動關閉主程式
+            sec = auto_close_sec
+            if sec:
+                if sec < 1:
+                    sec = 1
+                elif sec > 99:
+                    sec = 99
+                root.after(sec * 1000, root.destroy)
+
+        # 用 after 排程，不阻塞 UI
+        if delay > 0:
+            root.after(delay * 1000, do_close)
+        else:
+            root.after(0, do_close)
+
+# 先執行功能
+# early_auto_run()  # <-- 移除這一行
+
+# 再初始化 UI
 root = ttk.Window(themename="superhero")
 root.tk_setPalette(background="#172B4B")
-root.title("ChroLens_Clear v1.1")
+root.title("ChroLens_Clear v1.2")
 
 icon_path_a = "./Nekoneko.ico"
 icon_path_b = r"C:/Users/Lucien/Documents/GitHub/ChroLens_Clear/Nekoneko.ico"
@@ -45,6 +121,9 @@ def save_config():
         "execution_key": execution_key_var.get(),
         "auto_run": auto_run_var.get(),
         "auto_close": auto_close_var.get(),
+        "delay": delay_var.get(),
+        "repeat": repeat_var.get(),
+        "interval": interval_var.get(),
     }
     with open(CONFIG_FILE, "w", encoding="utf-8") as f:
         json.dump(config, f, ensure_ascii=False, indent=4)
@@ -57,7 +136,10 @@ def load_config():
     entry_num_windows.set(config.get("num_windows", "1"))
     execution_key_var.set(config.get("execution_key", "F8"))
     auto_run_var.set(config.get("auto_run", 0))
-    auto_close_var.set(config.get("auto_close", 0))
+    auto_close_var.set(config.get("auto_close", ""))
+    delay_var.set(config.get("delay", "0"))
+    repeat_var.set(config.get("repeat", "1"))
+    interval_var.set(config.get("interval", "0"))
     window_titles = config.get("window_titles", [])
     for i, title in enumerate(window_titles):
         if i < len(entry_windows):
@@ -69,29 +151,6 @@ def load_config():
     if auto_close_var.get():
         root.after(3000, root.destroy)
 
-def close_window_by_title(title):
-    def enum_handler(hwnd, result):
-        if win32gui.IsWindowVisible(hwnd):
-            window_text = win32gui.GetWindowText(hwnd)
-            if window_text == title:
-                win32gui.PostMessage(hwnd, win32con.WM_CLOSE, 0, 0)
-                result.append(hwnd)
-    result = []
-    win32gui.EnumWindows(enum_handler, result)
-    return result
-
-def close_window_by_title_partial(keyword):
-    import win32gui, win32con  # 延遲載入
-    keyword_lower = keyword.lower()
-    def enum_handler(hwnd, result):
-        if win32gui.IsWindowVisible(hwnd):
-            window_text = win32gui.GetWindowText(hwnd)
-            if keyword_lower in window_text.lower():
-                win32gui.PostMessage(hwnd, win32con.WM_CLOSE, 0, 0)
-                result.append(hwnd)
-    result = []
-    win32gui.EnumWindows(enum_handler, result)
-    return result
 
 def generate_and_run_ahk():
     try:
@@ -128,9 +187,10 @@ def generate_and_run_ahk():
             count = 0
             while True:
                 for title in window_titles:
-                    close_window_by_title_partial(title)
-                    if interval > 0:
-                        time.sleep(interval)
+                    if title.strip():  # 只處理非空字串
+                        close_window_by_title_partial(title)
+                        if interval > 0:
+                            time.sleep(interval)
                 count += 1
                 if repeat == 0:
                     continue
@@ -287,5 +347,7 @@ execute_button = ttk.Button(button_frame, text="執行", style="success.TButton"
 execute_button.pack(side="left", padx=10)
 
 load_config()
+early_auto_run()  # <-- 移到這裡，確保 root 已經定義
+
 root.mainloop()
 
