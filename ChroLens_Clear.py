@@ -1,5 +1,5 @@
-### ChroLens_Clear1.2 
-### 2025/06/06 By Lucienwooo
+### ChroLens_Clear1.3 
+### 2025/06/23 By Lucienwooo
 ### pyinstaller --onedir --noconsole --add-data "Nekoneko.ico;." --icon=Nekoneko.ico --hidden-import=win32timezone ChroLens_Clear.py
 ##### 尚無問題
 import os
@@ -9,8 +9,37 @@ import ttkbootstrap as ttk
 import win32gui
 import win32con
 import time
+import tkinter as tk  # 新增
 
-CONFIG_FILE = "config.json"
+# 修正：設定檔路徑永遠指向程式所在資料夾
+APP_DIR = os.path.dirname(os.path.abspath(__file__))
+CONFIG_FILE = os.path.join(APP_DIR, "config.json")
+
+def set_language(lang):
+    global L
+    L = LANGUAGES[lang]
+    save_language(lang)
+    # 更新 UI 文字
+    language_combobox.set(L["language"])
+    search_btn.config(text=L["search_window"])
+    close_window_count_label.config(text=L["close_window_count"])
+    window_title_label.config(text=L["window_title"])
+    execution_key_label.config(text=L["execution_key"])
+    delay_label.config(text=L["delay"])
+    auto_run_checkbutton.config(text=L["auto_run"])
+    repeat_label.config(text=L["repeat"])
+    save_button.config(text=L["save"])
+    execute_button.config(text=L["execute"])
+    # 預設視窗名稱
+    entry_windows[0].delete(0, "end")
+    entry_windows[0].insert(0, L["default_window_name"])
+
+
+def on_save():
+    save_config()
+
+def on_execute():
+    generate_and_run_ahk()
 
 def close_window_by_title(title):
     def enum_handler(hwnd, result):
@@ -93,20 +122,97 @@ def early_auto_run():
 # 先執行功能
 # early_auto_run()  # <-- 移除這一行
 
+# 設定 icon 路徑（建議用絕對路徑，避免 pyinstaller 打包後找不到）
+ICON_PATH = os.path.join(APP_DIR, "Nekoneko.ico")
+
+# 語言對應字典
+LANGUAGES = {
+    "繁體中文": {
+        "search_window": "搜尋視窗",
+        "close_window_count": "關閉視窗數",
+        "window_title": "視窗名稱",
+        "execution_key": "執行快捷鍵",
+        "delay": "延遲執行",
+        "auto_run": "程式啟動時自動執行",
+        "repeat": "次重複後自動關閉",
+        "repeat_tip": "輸入N，將會延遲N秒執行一次，重複N次後自動關閉\n(每次間隔等於延遲秒數)",
+        "save": "儲存",
+        "execute": "執行",
+        "close": "關閉",
+        "language": "Language",
+        "default_window_name": "chrome",
+        "search_window_title": "搜尋視窗",
+    },
+    "English": {
+        "search_window": "Search",
+        "close_window_count": "Number of Windows to Close",
+        "window_title": "Window Title",
+        "execution_key": "Hotkey",
+        "delay": "Delay (sec)",
+        "auto_run": "Auto Run on Startup",
+        "repeat": "Auto Close After N Times",
+        "repeat_tip": "Enter N: will execute once every N seconds, repeat N times then auto close.\n(Interval equals delay seconds)",
+        "save": "Save",
+        "execute": "Execute",
+        "close": "Close",
+        "language": "Language",
+        "default_window_name": "chrome",
+        "search_window_title": "Search Windows",
+    },
+    "日本語": {
+        "search_window": "検索",
+        "close_window_count": "閉じるウィンドウ数",
+        "window_title": "ウィンドウ名",
+        "execution_key": "実行ホットキー",
+        "delay": "遅延実行(秒)",
+        "auto_run": "起動時に自動実行",
+        "repeat": "N回繰り返し後自動終了",
+        "repeat_tip": "Nを入力するとN秒ごとに実行し、N回後に自動終了します\n(間隔は遅延秒数と同じ)",
+        "save": "保存",
+        "execute": "実行",
+        "close": "閉じる",
+        "language": "Language",
+        "default_window_name": "chrome",
+        "search_window_title": "ウィンドウ検索",
+    }
+}
+
+def save_language(lang):
+    try:
+        if Path(CONFIG_FILE).exists():
+            with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+                config = json.load(f)
+        else:
+            config = {}
+        config["language"] = lang
+        with open(CONFIG_FILE, "w", encoding="utf-8") as f:
+            json.dump(config, f, ensure_ascii=False, indent=4)
+    except Exception as e:
+        print("語言儲存失敗：", e)
+
+def load_language():
+    if Path(CONFIG_FILE).exists():
+        with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+            config = json.load(f)
+        return config.get("language", "繁體中文")
+    return "繁體中文"
+
+current_language = load_language()
+L = LANGUAGES[current_language]
+
 # 再初始化 UI
 root = ttk.Window(themename="superhero")
 root.tk_setPalette(background="#172B4B")
-root.title("ChroLens_Clear 1.2")
+root.title("ChroLens_Clear1.3")
 
-icon_path_a = "./Nekoneko.ico"
-icon_path_b = r"C:/Users/Lucien/Documents/GitHub/ChroLens_Clear/Nekoneko.ico"
-
-if os.path.exists(icon_path_a):
-    root.iconbitmap(icon_path_a)
-elif os.path.exists(icon_path_b):
-    root.iconbitmap(icon_path_b)
-else:
-    print("圖示檔案不存在，將不設置圖示。")
+# 設定主視窗 icon
+try:
+    if os.path.exists(ICON_PATH):
+        root.iconbitmap(ICON_PATH)
+    else:
+        print("圖示檔案不存在，將不設置圖示。")
+except Exception as e:
+    print("設定圖示失敗：", e)
 
 style = ttk.Style()
 style.configure("TLabel", foreground="#F5D07D", font=("微軟正黑體", 14, "bold"))
@@ -120,10 +226,10 @@ def save_config():
         "window_titles": [entry.get() for entry in entry_windows],
         "execution_key": execution_key_var.get(),
         "auto_run": auto_run_var.get(),
-        "auto_close": auto_close_var.get(),
+        # "auto_close": auto_close_var.get(),  # 移除自動退出
         "delay": delay_var.get(),
         "repeat": repeat_var.get(),
-        "interval": interval_var.get(),
+        # "interval": interval_var.get(),      # 秮除關閉間隔
     }
     with open(CONFIG_FILE, "w", encoding="utf-8") as f:
         json.dump(config, f, ensure_ascii=False, indent=4)
@@ -136,10 +242,10 @@ def load_config():
     entry_num_windows.set(config.get("num_windows", "1"))
     execution_key_var.set(config.get("execution_key", "F8"))
     auto_run_var.set(config.get("auto_run", 0))
-    auto_close_var.set(config.get("auto_close", ""))
+    # auto_close_var.set(config.get("auto_close", ""))  # 移除自動退出
     delay_var.set(config.get("delay", "0"))
     repeat_var.set(config.get("repeat", "1"))
-    interval_var.set(config.get("interval", "0"))
+    # interval_var.set(config.get("interval", "0"))     # 秮除關閉間隔
     window_titles = config.get("window_titles", [])
     for i, title in enumerate(window_titles):
         if i < len(entry_windows):
@@ -148,9 +254,6 @@ def load_config():
     update_window_inputs()
     if auto_run_var.get():
         root.after(1000, generate_and_run_ahk)
-    if auto_close_var.get():
-        root.after(3000, root.destroy)
-
 
 def generate_and_run_ahk():
     try:
@@ -164,8 +267,8 @@ def generate_and_run_ahk():
 
     try:
         repeat = int(repeat_var.get())
-        if repeat < 0:
-            repeat = 0
+        if repeat < 1:
+            repeat = 1
     except ValueError:
         repeat = 1
 
@@ -174,43 +277,21 @@ def generate_and_run_ahk():
         window_titles = [entry_windows[i].get() for i in range(num_windows) if entry_windows[i].get().strip()]
         if not window_titles:
             return
-        try:
-            interval = int(interval_var.get())
-            if interval < 0:
-                interval = 0
-            elif interval > 99:
-                interval = 99
-        except ValueError:
-            interval = 0
 
-        def do_close():
-            count = 0
-            while True:
-                for title in window_titles:
-                    if title.strip():  # 只處理非空字串
-                        close_window_by_title_partial(title)
-                        if interval > 0:
-                            time.sleep(interval)
-                count += 1
-                if repeat == 0:
-                    continue
-                if count >= repeat:
-                    break
+        def do_close(count=0):
+            for title in window_titles:
+                if title.strip():
+                    close_window_by_title_partial(title)
+            count += 1
+            if count < repeat:
+                root.after(delay * 1000, lambda: do_close(count))
+            else:
+                root.after(1000, root.destroy)  # 最後一次後1秒自動關閉
 
         if delay > 0:
-            root.after(delay * 1000, do_close)
+            root.after(delay * 1000, lambda: do_close(0))
         else:
-            do_close()
-
-        try:
-            auto_close_sec = int(auto_close_var.get())
-            if auto_close_sec < 1:
-                auto_close_sec = 1
-            elif auto_close_sec > 99:
-                auto_close_sec = 99
-            root.after(auto_close_sec * 1000, root.destroy)
-        except Exception:
-            pass
+            do_close(0)
 
     except ValueError:
         pass
@@ -238,82 +319,168 @@ def update_window_inputs(*args):
     except ValueError:
         pass
 
-ttk.Label(root, text="關閉視窗數").grid(row=0, column=0, padx=5, pady=5, sticky="w")
+
+# === 新增「搜尋視窗」按鈕在 row=0 ===
+def open_window_search_dialog():
+    # 建立一個與主視窗同高、寬度相同的新 Toplevel 視窗，位置在主視窗右側
+    search_win = tk.Toplevel(root)
+    search_win.title("搜尋視窗")
+    # 設定 icon 與主程式一致
+    try:
+        if os.path.exists(ICON_PATH):
+            search_win.iconbitmap(ICON_PATH)
+    except Exception as e:
+        print("搜尋視窗設定圖示失敗：", e)
+    # 取得主視窗位置與大小，搜尋視窗顯示在右側
+    root.update_idletasks()
+    w = root.winfo_width()
+    h = root.winfo_height()
+    x = root.winfo_x()
+    y = root.winfo_y()
+    search_win.geometry(f"{w}x{h}+{x + w + 20}+{y}")
+    search_win.transient(root)
+    # 不要 grab_set，這樣主視窗可以互動
+    search_win.focus_set()
+    search_win.resizable(True, True)
+
+    # 建立滾動區域
+    frame = ttk.Frame(search_win)
+    frame.pack(fill="both", expand=True)
+    canvas = tk.Canvas(frame, highlightthickness=0)
+    canvas.pack(side="left", fill="both", expand=True)
+    vsb = ttk.Scrollbar(frame, orient="vertical", command=canvas.yview)
+    vsb.pack(side="right", fill="y")
+    canvas.configure(yscrollcommand=vsb.set)
+    inner_frame = ttk.Frame(canvas)
+    inner_id = canvas.create_window((0, 0), window=inner_frame, anchor="nw")
+    def on_configure(event):
+        canvas.configure(scrollregion=canvas.bbox("all"))
+        canvas.itemconfig(inner_id, width=canvas.winfo_width())
+    inner_frame.bind("<Configure>", on_configure)
+
+    # 取得所有可見視窗標題，排除系統/隱藏視窗
+    import win32gui
+    def get_window_titles():
+        titles = []
+        exclude_keywords = [
+            "設定", "Windows 輸入體驗", "Program Manager", "LockApp", "Default IME", "Shell_TrayWnd",
+            "Cortana", "Microsoft Text Input Application", "SearchUI", "Start menu", "Task Switching"
+        ]
+        def enum_handler(hwnd, _):
+            if win32gui.IsWindowVisible(hwnd):
+                title = win32gui.GetWindowText(hwnd)
+                # 過濾空白、系統視窗
+                if title and title.strip():
+                    if not any(ex in title for ex in exclude_keywords):
+                        titles.append(title)
+        win32gui.EnumWindows(enum_handler, None)
+        return titles
+
+    # 拖移相關
+    dragged_title = {"title": None}
+    drag_label_popup = {"win": None}
+
+    def on_label_drag_start(event, title):
+        dragged_title["title"] = title
+        # 懸浮視窗
+        if drag_label_popup["win"]:
+            drag_label_popup["win"].destroy()
+        drag_label_popup["win"] = tk.Toplevel(search_win)
+        drag_label_popup["win"].overrideredirect(True)
+        drag_label_popup["win"].attributes("-topmost", True)
+        label = ttk.Label(drag_label_popup["win"], text=title, background="#222", foreground="#fff", font=("微軟正黑體", 12))
+        label.pack()
+        def follow_mouse(ev):
+            x = ev.x_root + 10
+            y = ev.y_root + 10
+            drag_label_popup["win"].geometry(f"+{x}+{y}")
+        search_win.bind("<Motion>", follow_mouse)
+        def on_drop(ev):
+            # 檢查滑鼠下方是否為主程式的視窗名稱欄位
+            for entry in entry_windows:
+                x1 = entry.winfo_rootx()
+                y1 = entry.winfo_rooty()
+                x2 = x1 + entry.winfo_width()
+                y2 = y1 + entry.winfo_height()
+                if x1 <= ev.x_root <= x2 and y1 <= ev.y_root <= y2:
+                    entry.delete(0, tk.END)
+                    entry.insert(0, title)
+            if drag_label_popup["win"]:
+                drag_label_popup["win"].destroy()
+                drag_label_popup["win"] = None
+            search_win.unbind("<Motion>")
+            search_win.unbind("<ButtonRelease-1>")
+            dragged_title["title"] = None
+        search_win.bind("<ButtonRelease-1>", on_drop)
+
+    # 顯示所有視窗標題
+    for row, title in enumerate(get_window_titles()):
+        lbl = ttk.Label(inner_frame, text=title, anchor="w", font=("微軟正黑體", 12), background="#222", foreground="#fff")
+        lbl.grid(row=row, column=0, sticky="ew", padx=4, pady=2)
+        lbl.bind("<ButtonPress-1>", lambda e, t=title: on_label_drag_start(e, t))
+
+    # 關閉按鈕
+    ttk.Button(search_win, text="關閉", command=search_win.destroy).pack(pady=8)
+
+
+# row 0: 語言下拉選單 + 搜尋視窗按鈕
+language_var = ttk.StringVar(value=L["language"])
+language_combobox = ttk.Combobox(root, textvariable=language_var, values=["日本語", "English", "繁體中文"], width=8, state="readonly")
+language_combobox.grid(row=0, column=0, padx=5, pady=5, sticky="w")
+def on_language_selected(event):
+    set_language(language_var.get())
+language_combobox.bind("<<ComboboxSelected>>", on_language_selected)
+
+search_btn = ttk.Button(root, text=L["search_window"], style="info.TButton", command=open_window_search_dialog, width=8)
+search_btn.grid(row=0, column=1, padx=5, pady=5, sticky="e")
+
+# row 1 開始往下排
+close_window_count_label = ttk.Label(root, text=L["close_window_count"])
+close_window_count_label.grid(row=1, column=0, padx=5, pady=5, sticky="w")
 entry_num_windows = ttk.Combobox(root, values=[str(i) for i in range(1, 11)], width=5, state="readonly")
-entry_num_windows.grid(row=0, column=1, padx=5, pady=5, sticky="w")
+entry_num_windows.grid(row=1, column=1, padx=5, pady=5, sticky="w")
 entry_num_windows.set("1")
 entry_num_windows.bind("<<ComboboxSelected>>", update_window_inputs)
 
-ttk.Label(root, text="視窗名稱").grid(row=1, column=0, padx=5, pady=5, sticky="w")
+window_title_label = ttk.Label(root, text=L["window_title"])
+window_title_label.grid(row=2, column=0, padx=5, pady=5, sticky="w")
 entry_windows = []
 for i in range(10):
     entry = ttk.Entry(root, width=20)
-    entry.grid(row=1 + i, column=1, padx=5, pady=5, sticky="w")
+    entry.grid(row=2 + i, column=1, padx=5, pady=5, sticky="w")
     entry_windows.append(entry)
     if i > 0:
         entry.grid_remove()
-entry_windows[0].insert(0, "chrome")
+entry_windows[0].insert(0, L["default_window_name"])
 
-ttk.Label(root, text="執行快捷鍵").grid(row=11, column=0, padx=5, pady=5, sticky="w")
+execution_key_label = ttk.Label(root, text=L["execution_key"])
+execution_key_label.grid(row=12, column=0, padx=5, pady=5, sticky="w")
 execution_key_var = ttk.StringVar(value=execution_key)
 execution_key_combobox = ttk.Combobox(root, textvariable=execution_key_var, values=[f"F{i}" for i in range(1, 13)], width=5, state="readonly")
-execution_key_combobox.grid(row=11, column=1, padx=5, pady=5, sticky="w")
+execution_key_combobox.grid(row=12, column=1, padx=5, pady=5, sticky="w")
 execution_key_combobox.bind("<<ComboboxSelected>>", update_execution_key)
 
-ttk.Label(root, text="延遲執行").grid(row=12, column=0, padx=5, pady=5, sticky="w")
+delay_label = ttk.Label(root, text=L["delay"])
+delay_label.grid(row=13, column=0, padx=5, pady=5, sticky="w")
 delay_var = ttk.StringVar(value="0")
 delay_entry = ttk.Entry(root, textvariable=delay_var, width=4)
-delay_entry.grid(row=12, column=1, padx=5, pady=5, sticky="w")
-
-ttk.Label(root, text="關閉間隔").grid(row=13, column=0, padx=5, pady=5, sticky="w")
-interval_var = ttk.StringVar(value="0")
-interval_entry = ttk.Entry(root, textvariable=interval_var, width=4)
-interval_entry.grid(row=13, column=1, padx=5, pady=5, sticky="w")
+delay_entry.grid(row=13, column=1, padx=5, pady=5, sticky="w")
 
 # 常駐模式選項區塊
-style.configure("Persistent.TLabel", foreground="#FFFFFF", font=("微軟正黑體", 12, "bold"))
-style.configure("PersistentGreen.TLabel", foreground="#198754", font=("微軟正黑體", 14, "bold"))
-style.configure("PersistentGreen.TCheckbutton", foreground="#198754", font=("微軟正黑體", 14, "bold"))
-
 persistent_frame = ttk.LabelFrame(root, borderwidth=2)
-persistent_frame.grid(row=15, column=0, columnspan=2, padx=5, pady=5, sticky="we")
+persistent_frame.grid(row=16, column=0, columnspan=2, padx=5, pady=5, sticky="we")
 
 auto_run_var = ttk.IntVar(value=0)
 auto_run_checkbutton = ttk.Checkbutton(
-    persistent_frame, text="程式啟動時自動執行", variable=auto_run_var, command=save_config, style="PersistentGreen.TCheckbutton"
+    persistent_frame, text=L["auto_run"], variable=auto_run_var, command=save_config, style="PersistentGreen.TCheckbutton"
 )
 auto_run_checkbutton.grid(row=0, column=0, columnspan=2, pady=5, sticky="w")
 
-# 自動退出此工具（輸入框在左，標籤在右，含懸浮提示）
-auto_close_var = ttk.StringVar(value="")  
-auto_close_entry = ttk.Entry(persistent_frame, textvariable=auto_close_var, width=4)
-auto_close_entry.grid(row=1, column=0, padx=5, pady=5, sticky="w")
-auto_close_label = ttk.Label(persistent_frame, text="自動退出此工具", style="PersistentGreen.TLabel")
-auto_close_label.grid(row=1, column=1, padx=5, pady=5, sticky="w")
-def show_auto_close_tip(event):
-    x = event.x_root + 10
-    y = event.y_root + 10
-    global tip_window_auto_close
-    tip_window_auto_close = ttk.Toplevel(root)
-    tip_window_auto_close.wm_overrideredirect(True)
-    tip_window_auto_close.geometry(f"+{x}+{y}")
-    label = ttk.Label(tip_window_auto_close, text="可輸入0~60秒\n沒數字=不自動退出\n0=馬上退出", background="#FFFACD", foreground="#000")
-    label.pack()
-def hide_auto_close_tip(event):
-    global tip_window_auto_close
-    if tip_window_auto_close:
-        tip_window_auto_close.destroy()
-        tip_window_auto_close = None
-tip_window_auto_close = None
-auto_close_label.bind("<Enter>", show_auto_close_tip)
-auto_close_label.bind("<Leave>", hide_auto_close_tip)
-
-# 重複執行次數（輸入框在左，標籤在右，含懸浮提示）
 repeat_var = ttk.StringVar(value="1")
 repeat_entry = ttk.Entry(persistent_frame, textvariable=repeat_var, width=4)
-repeat_entry.grid(row=2, column=0, padx=5, pady=5, sticky="w")
-repeat_label = ttk.Label(persistent_frame, text="重複執行次數", style="PersistentGreen.TLabel")
-repeat_label.grid(row=2, column=1, padx=5, pady=5, sticky="w")
+repeat_entry.grid(row=1, column=0, padx=5, pady=5, sticky="w")
+repeat_label = ttk.Label(persistent_frame, text=L["repeat"], style="PersistentGreen.TLabel")
+repeat_label.grid(row=1, column=1, padx=5, pady=5, sticky="w")
 def show_tip(event):
     x = event.x_root + 10
     y = event.y_root + 10
@@ -321,7 +488,7 @@ def show_tip(event):
     tip_window = ttk.Toplevel(root)
     tip_window.wm_overrideredirect(True)
     tip_window.geometry(f"+{x}+{y}")
-    label = ttk.Label(tip_window, text="輸入 0 會無線重複", background="#FFFACD", foreground="#000")
+    label = ttk.Label(tip_window, text=L["repeat_tip"], background="#FFFACD", foreground="#000")
     label.pack()
 def hide_tip(event):
     global tip_window
@@ -332,22 +499,16 @@ tip_window = None
 repeat_label.bind("<Enter>", show_tip)
 repeat_label.bind("<Leave>", hide_tip)
 
-# 直接接續儲存與執行按鈕
-def on_save():
-    save_config()
-
-def on_execute():
-    generate_and_run_ahk()
-
+# 儲存與執行按鈕
 button_frame = ttk.Frame(root)
-button_frame.grid(row=100, column=0, columnspan=2, pady=10)
-save_button = ttk.Button(button_frame, text="儲存", style="info.TButton", command=on_save, width=10)
+button_frame.grid(row=101, column=0, columnspan=2, pady=10)
+save_button = ttk.Button(button_frame, text=L["save"], style="info.TButton", command=on_save, width=10)
 save_button.pack(side="left", padx=10)
-execute_button = ttk.Button(button_frame, text="執行", style="success.TButton", command=on_execute, width=10)
+execute_button = ttk.Button(button_frame, text=L["execute"], style="success.TButton", command=on_execute, width=10)
 execute_button.pack(side="left", padx=10)
 
 load_config()
-early_auto_run()  # <-- 移到這裡，確保 root 已經定義
-
+early_auto_run()
 root.mainloop()
+
 

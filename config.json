@@ -1,0 +1,19 @@
+{
+    "num_windows": "1",
+    "window_titles": [
+        "chrome",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        ""
+    ],
+    "execution_key": "F8",
+    "auto_run": 0,
+    "delay": "0",
+    "repeat": "1"
+}
