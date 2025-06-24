@@ -1,5 +1,5 @@
 ![ChroLens_Clear v1.0](./demo.gif)
-[ChroLens_Clear1.3](pic1.3.png)
+[ChroLens_Clear1.3](clc1.3.png)
 # ChroLens_Clear<br>
 ## 自定義一鍵關閉複數視窗
 ### 主要功能：

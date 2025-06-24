@@ -267,10 +267,10 @@ def generate_and_run_ahk():
 
     try:
         repeat = int(repeat_var.get())
-        if repeat < 1:
-            repeat = 1
+        if repeat < 0:
+            repeat = 0
     except ValueError:
-        repeat = 1
+        repeat = 0
 
     try:
         num_windows = int(entry_num_windows.get())
@@ -283,10 +283,13 @@ def generate_and_run_ahk():
                 if title.strip():
                     close_window_by_title_partial(title)
             count += 1
-            if count < repeat:
+            if repeat == 0:
+                # 0 代表不自動關閉，只執行一次，不關閉主程式
+                pass
+            elif count < repeat:
                 root.after(delay * 1000, lambda: do_close(count))
             else:
-                root.after(1000, root.destroy)  # 最後一次後1秒自動關閉
+                root.after(1000, root.destroy)
 
         if delay > 0:
             root.after(delay * 1000, lambda: do_close(0))
@@ -451,6 +454,10 @@ for i in range(10):
     entry_windows.append(entry)
     if i > 0:
         entry.grid_remove()
+    # 新增右鍵清空功能
+    def clear_entry(event, e=entry):
+        e.delete(0, tk.END)
+    entry.bind("<Button-3>", clear_entry)
 entry_windows[0].insert(0, L["default_window_name"])
 
 execution_key_label = ttk.Label(root, text=L["execution_key"])
