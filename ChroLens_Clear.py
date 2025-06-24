@@ -133,19 +133,19 @@ LANGUAGES = {
         "window_title": "視窗名稱",
         "execution_key": "執行快捷鍵",
         "delay": "延遲執行",
-        "auto_run": "程式啟動時自動執行",
+        "auto_run": "啟動時執行",
         "repeat": "次重複後自動關閉",
         "repeat_tip": "輸入N，將會延遲N秒執行一次，重複N次後自動關閉\n(每次間隔等於延遲秒數)",
         "save": "儲存",
         "execute": "執行",
         "close": "關閉",
         "language": "Language",
-        "default_window_name": "chrome",
+        "default_window_name": "",
         "search_window_title": "搜尋視窗",
     },
     "English": {
         "search_window": "Search",
-        "close_window_count": "Number of Windows to Close",
+        "close_window_count": "Windows",
         "window_title": "Window Title",
         "execution_key": "Hotkey",
         "delay": "Delay (sec)",
@@ -156,7 +156,7 @@ LANGUAGES = {
         "execute": "Execute",
         "close": "Close",
         "language": "Language",
-        "default_window_name": "chrome",
+        "default_window_name": "",
         "search_window_title": "Search Windows",
     },
     "日本語": {
@@ -172,7 +172,7 @@ LANGUAGES = {
         "execute": "実行",
         "close": "閉じる",
         "language": "Language",
-        "default_window_name": "chrome",
+        "default_window_name": "",
         "search_window_title": "ウィンドウ検索",
     }
 }
@@ -506,6 +506,26 @@ save_button = ttk.Button(button_frame, text=L["save"], style="info.TButton", com
 save_button.pack(side="left", padx=10)
 execute_button = ttk.Button(button_frame, text=L["execute"], style="success.TButton", command=on_execute, width=10)
 execute_button.pack(side="left", padx=10)
+
+# 預設值
+entry_num_windows.set("1")
+execution_key_var.set("F8")
+auto_run_var.set(0)
+delay_var.set("0")
+repeat_var.set("0")
+for entry in entry_windows:
+    entry.delete(0, "end")  # 不填入預設視窗名稱
+
+# 啟動時自動執行一次
+def startup_execute():
+    generate_and_run_ahk()
+root.after(100, startup_execute)
+
+# auto_run 勾選時立即執行
+def on_auto_run_checked(*args):
+    if auto_run_var.get():
+        generate_and_run_ahk()
+auto_run_var.trace_add("write", on_auto_run_checked)
 
 load_config()
 early_auto_run()
