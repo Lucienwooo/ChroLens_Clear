@@ -91,33 +91,33 @@ def early_auto_run():
         except Exception:
             auto_close_sec = 0
 
-        def do_close():
-            count = 0
-            while True:
-                for title in window_titles:
-                    if title.strip():
-                        close_window_by_title_partial(title)
-                        if interval > 0:
-                            time.sleep(interval)
-                count += 1
-                if repeat == 0:
-                    continue
-                if count >= repeat:
-                    break
-            # 自動關閉主程式
-            sec = auto_close_sec
-            if sec:
-                if sec < 1:
-                    sec = 1
-                elif sec > 99:
-                    sec = 99
-                root.after(sec * 1000, root.destroy)
+        def do_close(count=0):
+            for title in window_titles:
+                if title.strip():
+                    close_window_by_title_partial(title)
+                    if interval > 0:
+                        time.sleep(interval)
+            count += 1
+            if repeat == 0:
+                return
+            if count >= repeat:
+                # 自動關閉主程式
+                sec = auto_close_sec
+                if sec:
+                    if sec < 1:
+                        sec = 1
+                    elif sec > 99:
+                        sec = 99
+                    root.after(sec * 1000, root.destroy)
+                return
+            # 下一次
+            root.after(delay * 1000, lambda: do_close(count))
 
-        # 用 after 排程，不阻塞 UI
-        if delay > 0:
-            root.after(delay * 1000, do_close)
-        else:
-            root.after(0, do_close)
+        # 先立即執行一次
+        do_close(0)
+        # 若 repeat > 1，才繼續排程
+        if repeat > 1:
+            root.after(delay * 1000, lambda: do_close(1))
 
 # 先執行功能
 # early_auto_run()  # <-- 移除這一行
