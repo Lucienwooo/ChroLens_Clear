@@ -9,6 +9,9 @@ ChroLens_Clear - 視窗自動關閉工具
 - 延遲執行與重複執行
 - 多語言支援（繁中/英文/日文）
 """
+
+VERSION = "1.4.0"
+
 import os
 import json
 from pathlib import Path
@@ -17,6 +20,15 @@ import win32gui
 import win32con
 import time
 import tkinter as tk
+
+# 版本管理模組
+try:
+    from version_manager import VersionManager
+    from version_info_dialog import VersionInfoDialog
+    VERSION_MANAGER_AVAILABLE = True
+except ImportError:
+    print("版本管理模組未安裝，版本檢查功能將停用")
+    VERSION_MANAGER_AVAILABLE = False
 
 # ===== 常數定義 =====
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -417,7 +429,51 @@ def open_window_search_dialog():
     ttk.Button(search_win, text=L["close"], command=search_win.destroy).pack(pady=8)
 
 
-# row 0: 語言下拉選單 + 搜尋視窗按鈕
+# ===== 版本管理功能 =====
+def check_for_updates():
+    """檢查更新"""
+    if not VERSION_MANAGER_AVAILABLE:
+        tk.messagebox.showinfo("提示", "版本管理功能未啟用")
+        return
+    
+    try:
+        # 初始化版本管理器
+        version_manager = VersionManager(
+            current_version=VERSION,
+            logger=lambda msg: print(f"[版本管理] {msg}")
+        )
+        
+        # 開啟版本資訊對話框
+        dialog = VersionInfoDialog(
+            parent=root,
+            version_manager=version_manager,
+            current_version=VERSION,
+            on_update_callback=on_update_complete
+        )
+    except Exception as e:
+        tk.messagebox.showerror("錯誤", f"檢查更新失敗：{e}")
+
+def on_update_complete():
+    """更新完成回調"""
+    tk.messagebox.showinfo("提示", "更新完成！請重新啟動應用程式。")
+
+def show_about():
+    """顯示關於資訊"""
+    about_text = f"""ChroLens_Clear
+版本: {VERSION}
+作者: Lucienwooo
+日期: 2025/11/02
+
+視窗自動關閉工具
+支援批次關閉、延遲執行、重複執行
+
+© 2025 Lucienwooo
+授權: GPL v3 + 商業授權"""
+    
+    tk.messagebox.showinfo("關於 ChroLens_Clear", about_text)
+
+
+# row 0: 語言下拉選單 + 搜尋視窗按鈕 + 關於 + 檢查更新
 language_var = ttk.StringVar(value=L["language"])
 language_combobox = ttk.Combobox(root, textvariable=language_var, values=["日本語", "English", "繁體中文"], width=8, state="readonly")
 language_combobox.grid(row=0, column=0, padx=5, pady=5, sticky="w")
@@ -427,6 +483,13 @@ language_combobox.bind("<<ComboboxSelected>>", on_language_selected)
 
 search_btn = ttk.Button(root, text=L["search_window"], style="info.TButton", command=open_window_search_dialog, width=8)
 search_btn.grid(row=0, column=1, padx=5, pady=5, sticky="e")
+
+# 添加關於和檢查更新按鈕
+about_btn = ttk.Button(root, text="關於", style="secondary.TButton", command=show_about, width=6)
+about_btn.grid(row=0, column=2, padx=5, pady=5, sticky="e")
+
+update_btn = ttk.Button(root, text="檢查更新", style="success.TButton", command=check_for_updates, width=8)
+update_btn.grid(row=0, column=3, padx=5, pady=5, sticky="e")
 
 # row 1 開始往下排
 close_window_count_label = ttk.Label(root, text=L["close_window_count"])
