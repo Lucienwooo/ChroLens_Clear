@@ -11,6 +11,7 @@ ChroLens_Clear - 視窗自動關閉工具
 """
 
 VERSION = "1.4.0"
+GITHUB_REPO = "Lucienwooo/ChroLens_Clear"
 
 import os
 import json
@@ -438,8 +439,7 @@ def check_for_updates():
     
     try:
         # 初始化版本管理器
-        version_manager = VersionManager(
-            current_version=VERSION,
+        version_manager = VersionManager(GITHUB_REPO, VERSION,
             logger=lambda msg: print(f"[版本管理] {msg}")
         )
         
@@ -458,19 +458,8 @@ def on_update_complete():
     tk.messagebox.showinfo("提示", "更新完成！請重新啟動應用程式。")
 
 def show_about():
-    """顯示關於資訊"""
-    about_text = f"""ChroLens_Clear
-版本: {VERSION}
-作者: Lucienwooo
-日期: 2025/11/02
-
-視窗自動關閉工具
-支援批次關閉、延遲執行、重複執行
-
-© 2025 Lucienwooo
-授權: GPL v3 + 商業授權"""
-    
-    tk.messagebox.showinfo("關於 ChroLens_Clear", about_text)
+    """顯示關於資訊 (使用統一對話框)"""
+    check_for_updates()
 
 
 # row 0: 語言下拉選單 + 搜尋視窗按鈕 + 關於 + 檢查更新

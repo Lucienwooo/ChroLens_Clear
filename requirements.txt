@@ -1,0 +1,7 @@
+# ChroLens_Clear 依賴套件
+# 自動生成於 2026-01-19
+
+packaging
+pywin32
+ttkbootstrap
+webbrowser
